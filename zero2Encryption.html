@@ -2,32 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>02 Encryption - RAM-only Secure</title>
+<title>Zero2 Encryption - RAM-only Secure</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
-  body{font-family:Segoe UI, Tahoma, Geneva, Verdana, sans-serif;background:#0f0f1a;color:#e0e0e0;margin:0;padding:0}
-  header{display:flex;justify-content:center;background:#14142b;padding:1rem;box-shadow:0 2px 6px rgba(0,0,0,0.5)}
-  header button{background:#1f1e3d;border:none;padding:.7rem 1.2rem;color:#e0e0e0;margin:0 .5rem;cursor:pointer;border-radius:6px;font-weight:700;transition:.2s}
-  header button:hover{background:#3a3870}
-  .section{display:none;padding:1rem 2rem;max-width:900px;margin:2rem auto;background:#1b1a33;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.6)}
-  .section.active{display:block}
-  h1{text-align:center;margin-top:1rem;color:#7f5af0}
-  textarea{width:100%;height:160px;margin-top:.5rem;padding:.5rem;border-radius:5px;border:none;background:#2b2a50;color:#fff;resize:vertical}
-  .controls{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem}
-  button.copy,button.paste{background:#3b3a6a;border:none;padding:.35rem .7rem;cursor:pointer;border-radius:5px;color:#fff;font-size:.9rem;display:flex;align-items:center;margin-left:.4rem}
-  .row{display:flex;gap:.6rem;align-items:center}
-  input[type=file],input[type=password]{width:100%;padding:.5rem;border-radius:5px;border:none;background:#2b2a50;color:#fff;margin-bottom:.5rem}
-  button.action{background:#7f5af0;color:white;padding:.6rem 1.2rem;border:none;border-radius:6px;cursor:pointer;font-weight:700;margin-top:.5rem;transition:.2s}
-  button.action:hover{background:#9966ff}
-  .small{font-size:.85rem;color:#bdbddb;margin-top:.5rem}
-  .preview img,.preview video{max-width:100%;margin-top:1rem;border-radius:6px;display:block}
-  a.download-link{display:inline-block;margin-top:.6rem;color:#cfc9ff;text-decoration:underline}
-  #overlay{position:fixed;inset:0;background:#000000cc;display:none;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:1.2rem}
-  .muted{color:#aaa;font-size:.9rem}
+body{font-family:Segoe UI, Tahoma, Geneva, Verdana, sans-serif;background:#0f0f1a;color:#e0e0e0;margin:0;padding:0}
+header{display:flex;justify-content:center;background:#14142b;padding:1rem;box-shadow:0 2px 6px rgba(0,0,0,0.5)}
+header button{background:#1f1e3d;border:none;padding:.7rem 1.2rem;color:#e0e0e0;margin:0 .5rem;cursor:pointer;border-radius:6px;font-weight:700;transition:.2s}
+header button:hover{background:#3a3870}
+.section{display:none;padding:1rem 2rem;max-width:900px;margin:2rem auto;background:#1b1a33;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,.6)}
+.section.active{display:block}
+h1{text-align:center;margin-top:1rem;color:#7f5af0}
+textarea{width:100%;height:160px;margin-top:.5rem;padding:.5rem;border-radius:5px;border:none;background:#2b2a50;color:#fff;resize:vertical}
+.controls{display:flex;justify-content:space-between;align-items:center;margin-top:.5rem}
+button.copy,button.paste{background:#3b3a6a;border:none;padding:.35rem .7rem;cursor:pointer;border-radius:5px;color:#fff;font-size:.9rem;display:flex;align-items:center;margin-left:.4rem}
+.row{display:flex;gap:.6rem;align-items:center}
+input[type=file],input[type=password]{width:100%;padding:.5rem;border-radius:5px;border:none;background:#2b2a50;color:#fff;margin-bottom:.5rem}
+button.action{background:#7f5af0;color:white;padding:.6rem 1.2rem;border:none;border-radius:6px;cursor:pointer;font-weight:700;margin-top:.5rem;transition:.2s}
+button.action:hover{background:#9966ff}
+.small{font-size:.85rem;color:#bdbddb;margin-top:.5rem}
+.preview img,.preview video{max-width:100%;margin-top:1rem;border-radius:6px;display:block}
+a.download-link{display:inline-block;margin-top:.6rem;color:#cfc9ff;text-decoration:underline}
+#overlay{position:fixed;inset:0;background:#000000cc;display:none;align-items:center;justify-content:center;z-index:9999;color:#fff;font-size:1.2rem}
+.muted{color:#aaa;font-size:.9rem}
 </style>
 </head>
 <body>
-<h1>02 Encryption — RAM-only (No persistent storage)</h1>
+<h1>Zero2 Encryption — RAM-only </h1>
 <header>
   <button onclick="showSection('encrypt')">Encrypt</button>
   <button onclick="showSection('decrypt')">Decrypt</button>
@@ -79,505 +79,221 @@
 </section>
 
 <script>
-/*
-RAM-only AES-GCM chunked encrypt/decrypt with PBKDF2.
-- No persistent storage used.
-- Large files handled with File.slice and streaming chunk encryption (4MB chunks).
-- Buffers are zeroed after use where possible.
-- Object URLs are revoked immediately after preview/download use.
-- Copy/Paste helpers added.
-*/
-
-// ---- CONFIG ----
-const CHUNK_SIZE = 4 * 1024 * 1024; // 4 MB chunks
-const PBKDF2_ITERS = 300000;        // high iteration count (adjust if too slow on low-end devices)
+// CONFIG
+const CHUNK_SIZE = 4 * 1024 * 1024; 
+const PBKDF2_ITERS = 300000;
 const SALT_BYTES = 16;
-const IV_BYTES = 12;                // AES-GCM IV
-const FK_BYTES = 32;                // file key 256-bit
+const IV_BYTES = 12;
+const FK_BYTES = 32;
 const HEADER_MAGIC = '02EN';
 const VERSION = 1;
 
-// ---- UI helpers ----
+// UI helpers
 function showSection(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   clearPreview();
 }
 function clearPreview() {
   const p = document.getElementById('preview');
-  if (!p) return;
-  // revoke any object URLs inside
-  const imgs = p.querySelectorAll('img,video');
-  imgs.forEach(el => {
-    if (el.src && el.src.startsWith('blob:')) {
-      try { URL.revokeObjectURL(el.src); } catch(e) {}
-    }
-    el.src = '';
-    el.remove();
+  if(!p) return;
+  const objs = p.querySelectorAll('img,video,textarea');
+  objs.forEach(o=>{
+    if(o.src?.startsWith('blob:')) try{URL.revokeObjectURL(o.src);}catch(e){}
+    o.remove();
   });
-  p.innerHTML = '';
-  // clear download area
-  const a = document.getElementById('decDownloadArea');
-  a.innerHTML = '';
+  p.innerHTML='';
+  document.getElementById('decDownloadArea').innerHTML='';
 }
 
-// ---- Random / util ----
-function randBytes(len) {
-  const arr = new Uint8Array(len);
-  crypto.getRandomValues(arr);
-  return arr;
-}
-function uint16BE(n) {
-  const a = new Uint8Array(2);
-  a[0] = (n >> 8) & 0xff; a[1] = n & 0xff;
-  return a;
-}
-function uint32BE(n) {
-  const a = new Uint8Array(4);
-  a[0] = (n >>> 24) & 0xff; a[1] = (n >>> 16) & 0xff; a[2] = (n >>> 8) & 0xff; a[3] = n & 0xff;
-  return a;
-}
-function readUint32BE(buf, offset=0) {
-  const u = new Uint8Array(buf, offset, 4);
-  return (u[0]<<24) | (u[1]<<16) | (u[2]<<8) | u[3];
-}
-function bufToBase64(buf) {
-  const bytes = new Uint8Array(buf);
-  let binary = '';
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
-  }
-  return btoa(binary);
-}
-function base64ToBuf(b64) {
-  const binary = atob(b64);
-  const len = binary.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-function zeroBuffer(typed) {
-  if (!typed) return;
-  for (let i = 0; i < typed.length; i++) typed[i] = 0;
+// UTIL
+function randBytes(len){const a=new Uint8Array(len);crypto.getRandomValues(a);return a;}
+function uint16BE(n){return new Uint8Array([(n>>8)&0xff,n&0xff]);}
+function uint32BE(n){return new Uint8Array([(n>>>24)&0xff,(n>>>16)&0xff,(n>>>8)&0xff,n&0xff]);}
+function readUint32BE(buf,offset=0){const u=new Uint8Array(buf,offset,4);return(u[0]<<24)|(u[1]<<16)|(u[2]<<8)|u[3];}
+function bufToBase64(buf){const bytes=new Uint8Array(buf);let binary='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk){binary+=String.fromCharCode.apply(null,Array.from(bytes.subarray(i,i+chunk)));}return btoa(binary);}
+function base64ToBuf(b64){const binary=atob(b64);const len=binary.length;const bytes=new Uint8Array(len);for(let i=0;i<len;i++)bytes[i]=binary.charCodeAt(i);return bytes.buffer;}
+function zeroBuffer(typed){if(!typed) return;for(let i=0;i<typed.length;i++)typed[i]=0;}
+
+// KDF
+async function deriveKeyPBKDF2(password,salt,iterations=PBKDF2_ITERS){
+  const enc=new TextEncoder();
+  const passKey=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations,hash:'SHA-256'},passKey,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
 
-// ---- KDF and key helpers ----
-async function deriveKeyPBKDF2(password, salt, iterations=PBKDF2_ITERS) {
-  const enc = new TextEncoder();
-  const passKey = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
-  return crypto.subtle.deriveKey(
-    {name:'PBKDF2', salt: salt, iterations: iterations, hash:'SHA-256'},
-    passKey,
-    {name:'AES-GCM', length: 256},
-    false,
-    ['encrypt','decrypt']
-  );
-}
-
-// ---- ENCRYPTION (chunked, in RAM only) ----
-async function encryptFile() {
-  // Clear outputs & previews
-  document.getElementById('encOutput').value = '';
-  document.getElementById('encDownloadArea').innerHTML = '';
+// ENCRYPT
+async function encryptFile(){
+  document.getElementById('encOutput').value='';
+  document.getElementById('encDownloadArea').innerHTML='';
   clearPreview();
-
-  const fileIn = document.getElementById('encFile');
-  const pass = document.getElementById('encPass').value || '';
-  if (!fileIn.files.length) { alert('Select a file to encrypt.'); return; }
-  if (!pass) { alert('Enter a password.'); return; }
-
-  const file = fileIn.files[0];
-  const salt = randBytes(SALT_BYTES);
-  const ivPrefix = randBytes(4); // we'll use 4 random bytes + 8-byte counter for per-chunk IV
-  const fk = randBytes(FK_BYTES); // file key (raw bytes)
-
-  // derive KEK from password+salt (PBKDF2)
-  const kek = await deriveKeyPBKDF2(pass, salt);
-
-  // wrap FK with KEK using AES-GCM (single wrap)
-  const headerForWrap = new TextEncoder().encode(JSON.stringify({
-    magic: HEADER_MAGIC, version: VERSION, name: file.name, type: file.type || 'application/octet-stream',
-    chunkSize: CHUNK_SIZE, kdf: 'PBKDF2', kdfIters: PBKDF2_ITERS
-  }));
-  const wrapIv = randBytes(12);
-  const wrappedFkBuf = await crypto.subtle.encrypt({name:'AES-GCM', iv: wrapIv, additionalData: headerForWrap}, kek, fk.buffer);
-  // build header bytes: [magic(4)][ver(1)][hdrlen(2)][headerJSON][salt(16)][wrapIv(12)][wrappedFkLen(4)][wrappedFk bytes]
-  const headerJSON = JSON.stringify({
-    magic: HEADER_MAGIC,
-    version: VERSION,
-    name: file.name,
-    type: file.type || 'application/octet-stream',
-    chunkSize: CHUNK_SIZE,
-    kdf: 'PBKDF2',
-    kdfIters: PBKDF2_ITERS,
-    wrapIv: bufToBase64(wrapIv),
-    wrappedFkLen: wrappedFkBuf.byteLength
-  });
-  const headerBytes = new TextEncoder().encode(headerJSON);
-  const headerLen = headerBytes.length;
-  if (headerLen > 65535) { alert('Header too large'); return; }
-
-  // Assemble initial buffer for output in memory progressively.
-  // Since user asked for base64 output and "no storage", we'll produce a full packed ArrayBuffer in RAM,
-  // then base64 it and place into textarea — BUT for very large files that could be memory-heavy.
-  // To limit memory use, we stream chunk encryption into an array of Uint8Array parts and concatenate at end.
-  const parts = [];
-
-  // fixed header prefix: magic + version + headerLen(2)
-  parts.push(new TextEncoder().encode(HEADER_MAGIC)); // 4 bytes
-  parts.push(new Uint8Array([VERSION]));             // 1 byte
-  parts.push(uint16BE(headerLen));                   // 2 bytes
-  parts.push(headerBytes);                           // header
-
-  // salt, wrapIv, wrappedFk length+bytes
+  const fileIn=document.getElementById('encFile');
+  const pass=document.getElementById('encPass').value||'';
+  if(!fileIn.files.length){alert('Select a file to encrypt.');return;}
+  if(!pass){alert('Enter a password.');return;}
+  const file=fileIn.files[0];
+  const salt=randBytes(SALT_BYTES);
+  const ivPrefix=randBytes(4);
+  const fk=randBytes(FK_BYTES);
+  const kek=await deriveKeyPBKDF2(pass,salt);
+  const headerForWrap=new TextEncoder().encode(JSON.stringify({magic:HEADER_MAGIC,version:VERSION,name:file.name,type:file.type||'application/octet-stream',chunkSize:CHUNK_SIZE,kdf:'PBKDF2',kdfIters:PBKDF2_ITERS}));
+  const wrapIv=randBytes(12);
+  const wrappedFkBuf=await crypto.subtle.encrypt({name:'AES-GCM',iv:wrapIv,additionalData:headerForWrap},kek,fk.buffer);
+  const headerJSON=JSON.stringify({magic:HEADER_MAGIC,version:VERSION,name:file.name,type:file.type||'application/octet-stream',chunkSize:CHUNK_SIZE,kdf:'PBKDF2',kdfIters:PBKDF2_ITERS,wrapIv:bufToBase64(wrapIv),wrappedFkLen:wrappedFkBuf.byteLength});
+  const headerBytes=new TextEncoder().encode(headerJSON);
+  const headerLen=headerBytes.length;
+  if(headerLen>65535){alert('Header too large');return;}
+  const parts=[];
+  parts.push(new TextEncoder().encode(HEADER_MAGIC));
+  parts.push(new Uint8Array([VERSION]));
+  parts.push(uint16BE(headerLen));
+  parts.push(headerBytes);
   parts.push(salt);
   parts.push(wrapIv);
-  const wrappedLenArr = uint32BE(wrappedFkBuf.byteLength);
-  parts.push(wrappedLenArr);
+  parts.push(uint32BE(wrappedFkBuf.byteLength));
   parts.push(new Uint8Array(wrappedFkBuf));
-
-  // Now encrypt file in chunks with FK as AES-GCM key:
-  const fkCryptoKey = await crypto.subtle.importKey('raw', fk.buffer, {name:'AES-GCM'}, false, ['encrypt','decrypt']);
-
-  // iterate over file slices
-  const totalSize = file.size;
-  let offset = 0;
-  let chunkIndex = 0;
-  try {
-    while (offset < totalSize) {
-      const sliceEnd = Math.min(offset + CHUNK_SIZE, totalSize);
-      const slice = file.slice(offset, sliceEnd);
-      const arrayBuffer = await slice.arrayBuffer();
-      // derive iv: ivPrefix(4) || counter(8) (counter big-endian)
-      const counter = BigInt(chunkIndex);
-      const iv = new Uint8Array(12);
-      iv.set(ivPrefix, 0);
-      // write 8-byte big-endian counter at iv[4..11]
-      for (let i = 0; i < 8; i++) {
-        iv[11 - i] = Number((counter >> BigInt(i*8)) & 0xffn);
-      }
-      // AAD: header fingerprint (we'll use headerBytes hash) + chunkIndex
-      const aad = new Uint8Array(4); // simple chunk index as AAD
-      aad.set(uint32BE(chunkIndex), 0);
-
-      // encrypt chunk
-      const ct = await crypto.subtle.encrypt({name:'AES-GCM', iv: iv, additionalData: aad}, fkCryptoKey, arrayBuffer);
-      const ctU8 = new Uint8Array(ct);
-      // chunk record: [chunkIndex(4)][iv(12)][ctLen(4)][ciphertext bytes]
-      parts.push(uint32BE(chunkIndex));
-      parts.push(iv);
-      parts.push(uint32BE(ctU8.length));
-      parts.push(ctU8);
-
-      // zero sensitive memory for the chunk
-      if (arrayBuffer && arrayBuffer.byteLength) {
-        try { zeroBuffer(new Uint8Array(arrayBuffer)); } catch(e) {}
-      }
-      chunkIndex++;
-      offset = sliceEnd;
-    }
-
-    // concatenate all parts into one big Uint8Array
-    let totalLen = 0;
-    for (const p of parts) totalLen += p.length;
-    const outArr = new Uint8Array(totalLen);
-    let pos = 0;
-    for (const p of parts) { outArr.set(p, pos); pos += p.length; }
-
-    // Convert to base64 for display/copy in textarea (user requested copy/paste)
-    const b64 = bufToBase64(outArr.buffer);
-
-    // ZERO sensitive buffers: fk, fkCryptoKey raw cannot be zeroed via WebCrypto, but we zero JS copies
-    zeroBuffer(fk);
-    zeroBuffer(outArr);
-    // parts array: release refs
-    for (let i=0;i<parts.length;i++) { parts[i] = null; }
-    parts.length = 0;
-
-    document.getElementById('encOutput').value = b64;
-
-    // Provide a download link that creates a Blob only when user clicks the link (explicit action).
-    const dlArea = document.getElementById('encDownloadArea');
-    dlArea.innerHTML = '';
-    const dlBtn = document.createElement('button');
-    dlBtn.className = 'action';
-    dlBtn.textContent = 'Create & Download Encrypted File';
-    dlBtn.onclick = () => {
-      // rebuild binary once (from base64) then create blob and prompt download — user explicitly asked to download
-      try {
-        const bin = base64ToBuf(b64);
-        const blob = new Blob([bin], {type:'application/octet-stream'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name + '.02enc';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        // revoke url after a short delay (allow browser to start download)
-        setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 2000);
-        // zero bin copy
-        try { zeroBuffer(new Uint8Array(bin)); } catch(e){}
-      } catch(e) {
-        alert('Download failed: ' + e.message);
-      }
-    };
-    dlArea.appendChild(dlBtn);
-
-    alert('Encryption completed. Encrypted base64 is in the output textarea (RAM only). Download will only occur if you click the download button.');
-
-  } catch (err) {
-    console.error(err);
-    alert('Encryption failed: ' + err.message);
-  } finally {
-    // try to clear FK raw buffer
-    try { zeroBuffer(fk); } catch(e){}
+  const fkCryptoKey=await crypto.subtle.importKey('raw',fk.buffer,{name:'AES-GCM'},false,['encrypt','decrypt']);
+  const totalSize=file.size;
+  let offset=0,chunkIndex=0;
+  while(offset<totalSize){
+    const sliceEnd=Math.min(offset+CHUNK_SIZE,totalSize);
+    const slice=file.slice(offset,sliceEnd);
+    const arrayBuffer=await slice.arrayBuffer();
+    const counter=BigInt(chunkIndex);
+    const iv=new Uint8Array(12); iv.set(ivPrefix,0);
+    for(let i=0;i<8;i++){iv[11-i]=Number((counter>>BigInt(i*8))&0xffn);}
+    const aad=uint32BE(chunkIndex);
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:aad},fkCryptoKey,arrayBuffer);
+    const ctU8=new Uint8Array(ct);
+    parts.push(uint32BE(chunkIndex)); parts.push(iv); parts.push(uint32BE(ctU8.length)); parts.push(ctU8);
+    zeroBuffer(new Uint8Array(arrayBuffer));
+    chunkIndex++; offset=sliceEnd;
   }
+  let total=0; for(const p of parts) total+=p.length;
+  const outArr=new Uint8Array(total); let pos=0; for(const p of parts){outArr.set(p,pos); pos+=p.length;}
+  const b64=bufToBase64(outArr.buffer);
+  zeroBuffer(fk); zeroBuffer(outArr); parts.length=0;
+  document.getElementById('encOutput').value=b64;
+  const dlArea=document.getElementById('encDownloadArea'); dlArea.innerHTML='';
+  const dlBtn=document.createElement('button'); dlBtn.className='action'; dlBtn.textContent='Create & Download Encrypted File';
+  dlBtn.onclick=()=>{
+    const bin=base64ToBuf(b64);
+    const blob=new Blob([bin],{type:'application/octet-stream'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=file.name+'.02enc'; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{try{URL.revokeObjectURL(url);}catch(e){}},2000); zeroBuffer(new Uint8Array(bin));
+  }; dlArea.appendChild(dlBtn);
+  alert('Encryption completed. Encrypted base64 is in the output textarea (RAM only).');
 }
 
-// ---- COPY/PASTE helpers for encrypt area ----
-async function copyEncrypted() {
-  const v = document.getElementById('encOutput').value;
-  if (!v) { alert('No encrypted output to copy.'); return; }
-  try {
-    await navigator.clipboard.writeText(v);
-    alert('Encrypted base64 copied to clipboard.');
-  } catch (e) {
-    alert('Copy failed: ' + e.message);
-  }
-}
-async function pasteIntoEncOutput() {
-  try {
-    const t = await navigator.clipboard.readText();
-    document.getElementById('encOutput').value = t;
-    alert('Pasted clipboard into encrypted output (RAM).');
-  } catch (e) {
-    alert('Paste failed: ' + e.message);
-  }
-}
-
-// ---- DECRYPTION (RAM-only) ----
-async function decryptFile() {
-  document.getElementById('preview').innerHTML = '';
-  document.getElementById('decDownloadArea').innerHTML = '';
-
-  const fileIn = document.getElementById('decFile');
-  const pass = document.getElementById('decPass').value || '';
-  const textArea = document.getElementById('decInput');
-
+// DECRYPT
+async function decryptFile(){
+  clearPreview();
+  document.getElementById('decDownloadArea').innerHTML='';
+  const fileIn=document.getElementById('decFile'); const pass=document.getElementById('decPass').value||''; const textArea=document.getElementById('decInput');
   let dataBuf;
-  try {
-    if (fileIn.files.length) {
-      dataBuf = await fileIn.files[0].arrayBuffer();
-    } else {
-      const b64 = textArea.value.trim();
-      if (!b64) { alert('Provide encrypted base64 (paste) or select .02enc file.'); return; }
-      dataBuf = base64ToBuf(b64);
-    }
-
-    const dataU8 = new Uint8Array(dataBuf);
-    let pos = 0;
-    // read magic
-    const magic = new TextDecoder().decode(dataU8.slice(pos, pos+4)); pos += 4;
-    if (magic !== HEADER_MAGIC) throw new Error('Invalid file format (magic mismatch).');
-    const ver = dataU8[pos]; pos += 1;
-    const hdrLen = (dataU8[pos]<<8) | dataU8[pos+1]; pos += 2;
-    const headerBytes = dataU8.slice(pos, pos + hdrLen); pos += hdrLen;
-    const headerJSON = new TextDecoder().decode(headerBytes);
-    const header = JSON.parse(headerJSON);
-    // salt
-    const salt = dataU8.slice(pos, pos + SALT_BYTES); pos += SALT_BYTES;
-    // wrapIv
-    const wrapIv = dataU8.slice(pos, pos + 12); pos += 12;
-    const wrappedLen = readUint32BE(dataBuf, pos); pos += 4;
-    const wrappedFk = dataU8.slice(pos, pos + wrappedLen); pos += wrappedLen;
-
-    if (!pass) { alert('Enter password.'); return; }
-
-    // derive KEK
-    const kek = await deriveKeyPBKDF2(pass, salt);
-
-    // unwrap fk (decrypt wrappedFk)
-    const headerForWrap = new TextEncoder().encode(JSON.stringify({
-      magic: HEADER_MAGIC, version: ver, name: header.name, type: header.type, chunkSize: header.chunkSize, kdf:'PBKDF2', kdfIters: header.kdfIters
-    }));
-    let fkBuf;
-    try {
-      fkBuf = await crypto.subtle.decrypt({name:'AES-GCM', iv: wrapIv, additionalData: headerForWrap}, kek, wrappedFk.buffer);
-    } catch (e) {
-      throw new Error('Key unwrap failed — incorrect password or corrupted file.');
-    }
-    const fkU8 = new Uint8Array(fkBuf);
-    const fkCryptoKey = await crypto.subtle.importKey('raw', fkU8.buffer, {name:'AES-GCM'}, false, ['encrypt','decrypt']);
-
-    // iterate chunks
-    const chunks = [];
-    while (pos < dataU8.length) {
-      const chunkIndex = readUint32BE(dataBuf, pos); pos += 4;
-      const iv = dataU8.slice(pos, pos + 12); pos += 12;
-      const ctLen = readUint32BE(dataBuf, pos); pos += 4;
-      const ct = dataU8.slice(pos, pos + ctLen); pos += ctLen;
-
-      // AAD: chunkIndex
-      const aad = uint32BE(chunkIndex);
-      let plain;
-      try {
-        plain = await crypto.subtle.decrypt({name:'AES-GCM', iv: iv, additionalData: aad}, fkCryptoKey, ct.buffer);
-      } catch (e) {
-        throw new Error('Chunk decrypt failed — incorrect password or corrupted file.');
-      }
+  try{
+    if(fileIn.files.length)dataBuf=await fileIn.files[0].arrayBuffer();
+    else{const b64=textArea.value.trim(); if(!b64){alert('Provide encrypted base64 or file.');return;} dataBuf=base64ToBuf(b64);}
+    const dataU8=new Uint8Array(dataBuf); let pos=0;
+    const magic=new TextDecoder().decode(dataU8.slice(pos,pos+4)); pos+=4; if(magic!==HEADER_MAGIC) throw new Error('Invalid file format'); 
+    const ver=dataU8[pos]; pos+=1;
+    const hdrLen=(dataU8[pos]<<8)|dataU8[pos+1]; pos+=2;
+    const headerBytes=dataU8.slice(pos,pos+hdrLen); pos+=hdrLen; const header=JSON.parse(new TextDecoder().decode(headerBytes));
+    const salt=dataU8.slice(pos,pos+SALT_BYTES); pos+=SALT_BYTES;
+    const wrapIv=dataU8.slice(pos,pos+12); pos+=12;
+    const wrappedLen=readUint32BE(dataBuf,pos); pos+=4;
+    const wrappedFk=dataU8.slice(pos,pos+wrappedLen); pos+=wrappedLen;
+    if(!pass){alert('Enter password.'); return;}
+    const kek=await deriveKeyPBKDF2(pass,salt);
+    const headerForWrap=new TextEncoder().encode(JSON.stringify({magic:HEADER_MAGIC,version:ver,name:header.name,type:header.type,chunkSize:header.chunkSize,kdf:'PBKDF2',kdfIters:header.kdfIters}));
+    const fkBuf=await crypto.subtle.decrypt({name:'AES-GCM',iv:wrapIv,additionalData:headerForWrap},kek,wrappedFk.buffer);
+    const fkU8=new Uint8Array(fkBuf);
+    const fkCryptoKey=await crypto.subtle.importKey('raw',fkU8.buffer,{name:'AES-GCM'},false,['encrypt','decrypt']);
+    const chunks=[];
+    while(pos<dataU8.length){
+      const chunkIndex=readUint32BE(dataBuf,pos); pos+=4;
+      const iv=dataU8.slice(pos,pos+12); pos+=12;
+      const ctLen=readUint32BE(dataBuf,pos); pos+=4;
+      const ct=dataU8.slice(pos,pos+ctLen); pos+=ctLen;
+      const aad=uint32BE(chunkIndex);
+      const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv,additionalData:aad},fkCryptoKey,ct.buffer);
       chunks.push(new Uint8Array(plain));
-      // zero plain buffer copy after push? We must keep it in memory for final blob; later we'll zero after constructing Blob.
     }
-
-    // assemble plaintext in RAM (Uint8Array)
-    let total = 0;
-    for (const c of chunks) total += c.length;
-    const out = new Uint8Array(total);
-    let p = 0;
-    for (const c of chunks) { out.set(c, p); p += c.length; }
-    // Zero chunk pieces
-    for (let i=0;i<chunks.length;i++) { try { zeroBuffer(chunks[i]); } catch(e){} chunks[i]=null; }
-    // Create blob from out and preview depending on MIME
-    const blob = new Blob([out.buffer], {type: header.type || 'application/octet-stream'});
-    const preview = document.getElementById('preview');
-
-    // For images/videos: create object URL (revoked on load). This stays in memory only until revoked.
-    const url = URL.createObjectURL(blob);
-    if (header.type && header.type.startsWith('image/')) {
-      const img = document.createElement('img');
-      img.onload = () => { try { URL.revokeObjectURL(url); } catch(e){} img.onload=null; };
-      img.src = url;
-      img.alt = header.name;
-      preview.appendChild(img);
-    } else if (header.type && header.type.startsWith('video/')) {
-      const v = document.createElement('video');
-      v.controls = true;
-      v.onloadeddata = () => { try { URL.revokeObjectURL(url); } catch(e){} v.onloadeddata=null; };
-      v.src = url;
-      preview.appendChild(v);
-    } else if (header.type && header.type.startsWith('text/')) {
-      // read text from blob without persistent storage
-      const txt = await blob.text();
-      const ta = document.createElement('textarea');
-      ta.style.height = '200px';
-      ta.style.width = '100%';
-      ta.value = txt;
-      preview.appendChild(ta);
-      // zero text variable after usage
-      // (JS strings can't be zeroed, but we remove references)
-      // note: this keeps plaintext in memory in the page while visible; user must close page to fully release
-    } else {
-      const div = document.createElement('div');
-      div.textContent = `Decrypted: ${header.name} (${header.type}) — click download to save (no auto-save).`;
-      preview.appendChild(div);
-    }
-
-    // Provide download button
-    const dlArea = document.getElementById('decDownloadArea');
-    dlArea.innerHTML = '';
-    const dlBtn = document.createElement('button');
-    dlBtn.className = 'action';
-    dlBtn.textContent = 'Download Decrypted File';
-    dlBtn.onclick = () => {
-      const dlUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = dlUrl;
-      a.download = header.name || 'decrypted.bin';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => { try { URL.revokeObjectURL(dlUrl); } catch(e){} }, 2000);
-    };
+    let total=0; for(const c of chunks) total+=c.length;
+    const out=new Uint8Array(total); let p=0; for(const c of chunks){out.set(c,p); p+=c.length;}
+    for(let i=0;i<chunks.length;i++){zeroBuffer(chunks[i]); chunks[i]=null;}
+    const blob=new Blob([out.buffer],{type:header.type||'application/octet-stream'});
+    const preview=document.getElementById('preview');
+    const url=URL.createObjectURL(blob);
+    if(header.type?.startsWith('image/')){const img=document.createElement('img'); img.onload=()=>{try{URL.revokeObjectURL(url);}catch(e){} img.onload=null;}; img.src=url; img.alt=header.name; preview.appendChild(img);}
+    else if(header.type?.startsWith('video/')){const v=document.createElement('video'); v.controls=true; v.onloadeddata=()=>{try{URL.revokeObjectURL(url);}catch(e){} v.onloadeddata=null;}; v.src=url; preview.appendChild(v);}
+    else if(header.type?.startsWith('text/')){const txt=await blob.text(); const ta=document.createElement('textarea'); ta.style.width='100%'; ta.style.height='200px'; ta.value=txt; preview.appendChild(ta);}
+    else{const div=document.createElement('div'); div.textContent=`Decrypted: ${header.name} (${header.type})`; preview.appendChild(div);}
+    const dlArea=document.getElementById('decDownloadArea'); dlArea.innerHTML='';
+    const dlBtn=document.createElement('button'); dlBtn.className='action'; dlBtn.textContent='Download Decrypted File';
+    dlBtn.onclick=()=>{const dlUrl=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=dlUrl; a.download=header.name||'decrypted.bin'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>{try{URL.revokeObjectURL(dlUrl);}catch(e){}},2000);}
     dlArea.appendChild(dlBtn);
-
-    // zero out large buffers and sensitive arrays
-    try { zeroBuffer(fkU8); } catch(e){}
-    try { zeroBuffer(out); } catch(e){}
-    // remove references
-    // note: blob holds a copy of data in browser memory until URL revoked and GC runs; we revoked preview URL on load and will revoke download URL after click.
-
-    alert('Decryption successful. File is held only in RAM; download only when you click the download button.');
-
-  } catch (e) {
-    console.error(e);
-    alert('Decryption failed: ' + (e && e.message ? e.message : e));
-  }
+    zeroBuffer(fkU8); zeroBuffer(out);
+    alert('Decryption successful. File held only in RAM; download when ready.');
+  }catch(e){console.error(e); alert('Decryption failed: '+(e.message||e));}
 }
 
-// ---- COPY/PASTE helpers for decrypt area ----
-async function pasteEncrypted() {
-  try {
-    const t = await navigator.clipboard.readText();
-    document.getElementById('decInput').value = t;
-    alert('Pasted clipboard into decrypt input (RAM).');
-  } catch (e) { alert('Paste failed: ' + e.message); }
-}
-async function copyDecInput() {
-  const v = document.getElementById('decInput').value;
-  if (!v) { alert('No encrypted input to copy.'); return; }
-  try { await navigator.clipboard.writeText(v); alert('Copied encrypted input to clipboard.'); }
-  catch (e) { alert('Copy failed: ' + e.message); }
-}
-
-// ---- password strength UI ----
-function checkPassword() {
-  const p = document.getElementById('encPass').value || '';
-  const el = document.getElementById('passwordStrength');
-  if (!p) { el.textContent = ''; return; }
-  let score = 0;
-  if (p.length >= 8) score++;
-  if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
-  if (/\d/.test(p)) score++;
-  if (/[^A-Za-z0-9]/.test(p)) score++;
-  if (p.length >= 16) score++;
-  el.className = 'small';
-  if (score <= 1) { el.textContent='Weak password'; el.className='small'; el.style.color='#ff4d4d'; }
-  else if (score <= 3) { el.textContent='Medium password'; el.style.color='#ffa500'; }
-  else { el.textContent='Strong password'; el.style.color='#4dff88'; }
-}
-
-// ---- Minimal "devtools overlay" deterrent (non-secure) ----
-// show overlay if devtools detected; this only deters casual inspection.
-// We prioritize RAM-only behavior; these are just mild deterrents per previous request.
-let devtoolsOpen = false;
-function setOverlay(on) {
-  const o = document.getElementById('overlay');
-  if (!o) return;
-  o.style.display = on ? 'flex' : 'none';
-}
-(function devtoolsDetect() {
-  const threshold = 160;
-  let last = +new Date();
-  setInterval(() => {
-    const start = +new Date();
-    debugger; // causes a pause if devtools open and will be detectable by timing
-    const delta = (+new Date()) - start;
-    if (delta > threshold) {
-      if (!devtoolsOpen) { devtoolsOpen = true; setOverlay(true); }
-    } else {
-      if (devtoolsOpen) { devtoolsOpen = false; setOverlay(false); }
+// COPY/PASTE
+async function copyEncrypted(){const v=document.getElementById('encOutput').value; if(!v){alert('No encrypted output to copy'); return;} try{await navigator.clipboard.writeText(v); alert('Encrypted copied');}catch(e){alert('Copy failed: '+e.message);}}
+async function pasteIntoEncOutput(){try{const t=await navigator.clipboard.readText(); document.getElementById('encOutput').value=t; alert('Pasted into encrypted output');}catch(e){alert('Paste failed: '+e.message);}}
+async function pasteEncrypted(){try{const t=await navigator.clipboard.readText(); document.getElementById('decInput').value=t; alert('P// continue from previous script...
+async function pasteEncrypted(){
+    try {
+        const t = await navigator.clipboard.readText();
+        document.getElementById('decInput').value = t;
+        alert('Pasted into encrypted input');
+    } catch (e) {
+        alert('Paste failed: ' + e.message);
     }
-  }, 1000);
-})();
+}
 
-// Disable common shortcuts & right click to make casual inspection harder
-window.addEventListener('contextmenu', e => { e.preventDefault(); });
-window.addEventListener('keydown', e => {
-  // block F12, Ctrl+Shift+I/J/C/U
-  if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) {
-    e.preventDefault(); e.stopPropagation();
-    setOverlay(true);
-    setTimeout(()=>setOverlay(false), 2000);
-    return false;
-  }
-});
+async function copyDecInput(){
+    const v = document.getElementById('decInput').value;
+    if(!v){alert('No input to copy'); return;}
+    try{
+        await navigator.clipboard.writeText(v);
+        alert('Encrypted input copied');
+    } catch(e){
+        alert('Copy failed: ' + e.message);
+    }
+}
 
-// ---- safety notes printed once in console (not sensitive) ----
-console.log('02 Encryption (RAM-only) loaded. No persistent storage used by this page.');
+// Password strength indicator
+function checkPassword(){
+    const p = document.getElementById('encPass').value;
+    const s = document.getElementById('passwordStrength');
+    let score = 0;
+    if(p.length>=8) score++;
+    if(/[A-Z]/.test(p)) score++;
+    if(/[0-9]/.test(p)) score++;
+    if(/[\W]/.test(p)) score++;
+    const levels=['Very Weak','Weak','Medium','Strong','Very Strong'];
+    s.textContent = 'Password Strength: ' + levels[score];
+}
 
-// End of script
+// Devtools overlay (basic)
+let devtoolsOpen = false;
+setInterval(() => {
+    const widthThreshold = window.outerWidth - window.innerWidth > 160;
+    const heightThreshold = window.outerHeight - window.innerHeight > 160;
+    if(widthThreshold || heightThreshold){
+        if(!devtoolsOpen){
+            document.getElementById('overlay').style.display='flex';
+            devtoolsOpen = true;
+        }
+    } else {
+        if(devtoolsOpen){
+            document.getElementById('overlay').style.display='none';
+            devtoolsOpen = false;
+        }
+    }
+}, 1000);
 </script>
 </body>
 </html>
